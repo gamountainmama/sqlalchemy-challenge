@@ -27,7 +27,6 @@ session = Session(engine)
 #################################################
 # Flask Setup
 #################################################
-from flask import Flask
 
 app = Flask(__name__)
 
@@ -38,11 +37,10 @@ app = Flask(__name__)
 @app.route("/")
 def welcome():
     return (f"Available Routes:<br/>"
-            f"/api/v1.0/precipitation"
-            f"/api/v1.0/stations"
-            f"/api/v1.0/tobs"
-            f"/api/v1.0/<start>"
-            f"/api/v1.0/<start>/<end>"
+            f"/api/v1.0/precipitation<br/>"
+            f"/api/v1.0/stations<br/>"
+            f"/api/v1.0/tobs<br/>"
+            f"/api/v1.0/temp/")
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
@@ -55,9 +53,10 @@ def precipitation():
         filter(Measurement.date >= prev_year).all()
 
     session.close()
+
     # Dict with date as the key and prcp as the value
-    ## WORK NEEDED HERE ##
-    return ## WORK NEEDED HERE ##
+    precipitation = list(np.ravel(precipitation))
+    return jsonify(precipitation)
 
 
 @app.route("/api/v1.0/stations")
@@ -69,7 +68,7 @@ def stations():
 
     # Unravel results into a 1D array and convert to a list
     stations = list(np.ravel(results))
-    return ## WORK NEEDED HERE ##
+    return jsonify(stations)
 
 
 @app.route("/api/v1.0/tobs")
@@ -90,7 +89,6 @@ def temp_monthly():
     # Return the results
     return jsonify(temps=temps)
 
-
 @app.route("/api/v1.0/temp/<start>")
 @app.route("/api/v1.0/temp/<start>/<end>")
 def stats(start=None, end=None):
@@ -99,15 +97,8 @@ def stats(start=None, end=None):
     # Select statement
     sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
 
+    # if no end date given
     if not end:
-        # start = dt.datetime.strptime(start, "%m/%d/%Y")
-        # # calculate TMIN, TAVG, TMAX for dates greater than start
-        # results = session.query(*sel).\
-        #     filter(Measurement.date >= start).all()
-        # # Unravel results into a 1D array and convert to a list
-        # temps = list(np.ravel(results))
-        # return jsonify(temps)
-
         start = dt.datetime.strptime(start, "%m%d%Y")
         results = session.query(*sel).\
             filter(Measurement.date >= start).all()
@@ -115,21 +106,30 @@ def stats(start=None, end=None):
         session.close()
 
         temps = list(np.ravel(results))
-        return ## WORK NEEDED HERE ##
 
-    # calculate TMIN, TAVG, TMAX with start and stop
-    ## WORK NEEDED HERE ##
+        # calculate TMIN, TAVG, TMAX with start 
+        return (f"The minimum temperature was {temps[0]}.<br>"
+                f"The average temperature was {temps[1]}.<br>"
+                f"The maximum temperature was {temps[2]}.")
 
-    results = session.query(*sel).\
-        filter(Measurement.date >= start).\
-        filter(Measurement.date <= end).all()
+    # if end date given
+    else:
+        start = dt.datetime.strptime(start,"%m%d%Y")
+        end = dt.datetime.strptime(end,"%m%d%Y")
+        results = session.query(*sel).\
+            filter(Measurement.date >= start).\
+            filter(Measurement.date <= end).all()
 
-    session.close()
+        session.close()
 
-    # Unravel results into a 1D array and convert to a list
-    temps = list(np.ravel(results))
-    return ## WORK NEEDED HERE ##
+        # Unravel results into a 1D array and convert to a list
+        temps = list(np.ravel(results))
+
+        return (f"The minimum temperature was {temps[0]}.<br>"
+                f"The average temperature was {temps[1]}.<br>"
+                f"The maximum temperature was {temps[2]}.")
 
 
 if __name__ == '__main__':
+    app.run(debug=True)
     ## WORK NEEDED HERE ##
